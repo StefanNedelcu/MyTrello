@@ -8,11 +8,11 @@ namespace MyTrello.Controllers
     [Route("api/[controller]")]
     public class BoardsController : ControllerBase
     {
-        private readonly IBoardService _boardService;
+        private readonly IBoardsService _boardsService;
 
-        public BoardsController(IBoardService boardService)
+        public BoardsController(IBoardsService boardsService)
         {
-            _boardService = boardService;
+            _boardsService = boardsService;
         }
 
         [HttpGet]
@@ -20,7 +20,7 @@ namespace MyTrello.Controllers
         {
             try
             {
-                var allBoards = await _boardService.GetAllBoards();
+                var allBoards = await _boardsService.GetAllBoardsAsync();
                 return Ok(allBoards);
             }
             catch
@@ -29,12 +29,26 @@ namespace MyTrello.Controllers
             }
         }
 
-        [HttpPost]
-        public async Task<IActionResult> AddBoard([FromBody]BoardDto newBoard)
+        [HttpGet("{boardId}")]
+        public async Task<IActionResult> GetBoard([FromRoute] Guid boardId)
         {
             try
             {
-                await _boardService.AddBoard(newBoard);
+                var board = await _boardsService.GetBoardAsync(boardId);
+                return Ok(board);
+            }
+            catch
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable);
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AddBoard([FromBody] BoardDto newBoard)
+        {
+            try
+            {
+                await _boardsService.AddBoardAsync(newBoard);
                 return NoContent();
             }
             catch (ArgumentException ex)
@@ -48,11 +62,11 @@ namespace MyTrello.Controllers
         }
 
         [HttpPut]
-        public async Task<IActionResult> EditBoard([FromBody]BoardDto editedBoard)
+        public async Task<IActionResult> EditBoard([FromBody] BoardDto editedBoard)
         {
             try
             {
-                await _boardService.EditBoard(editedBoard);
+                await _boardsService.EditBoardAsync(editedBoard);
                 return NoContent();
             }
             catch (ArgumentException ex)
@@ -66,11 +80,11 @@ namespace MyTrello.Controllers
         }
 
         [HttpDelete("{boardId}")]
-        public async Task<IActionResult> DeleteBoard([FromRoute]Guid boardId)
+        public async Task<IActionResult> DeleteBoard([FromRoute] Guid boardId)
         {
             try
             {
-                await _boardService.DeleteBoard(boardId);
+                await _boardsService.DeleteBoardAsync(boardId);
                 return NoContent();
             }
             catch (ArgumentException ex)

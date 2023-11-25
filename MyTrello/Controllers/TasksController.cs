@@ -8,20 +8,34 @@ namespace MyTrello.Controllers
     [Route("api/[controller]")]
     public class TasksController : ControllerBase
     {
-        private readonly ITaskService _taskService;
+        private readonly ITasksService _tasksService;
 
-        public TasksController(ITaskService taskService)
+        public TasksController(ITasksService tasksService)
         {
-            _taskService = taskService;
+            _tasksService = tasksService;
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetTasks([FromQuery] Guid taskListId)
+        public async Task<IActionResult> GetTasks([FromQuery] Guid? taskListId)
         {
             try
             {
-                var allTaskLists = await _taskService.GetTasksFromList(taskListId);
-                return Ok(allTaskLists);
+                var tasks = await _tasksService.GetTasksAsync(taskListId);
+                return Ok(tasks);
+            }
+            catch
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable);
+            }
+        }
+
+        [HttpGet("{taskId}")]
+        public async Task<IActionResult> GetTask([FromRoute] Guid taskId)
+        {
+            try
+            {
+                var tasks = await _tasksService.GetTaskAsync(taskId);
+                return Ok(tasks);
             }
             catch
             {
@@ -30,11 +44,11 @@ namespace MyTrello.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddTask([FromQuery]Guid taskListId, [FromBody]TaskDto newTask)
+        public async Task<IActionResult> AddTask([FromBody] TaskDto newTask)
         {
             try
             {
-                await _taskService.AddTask(taskListId, newTask);
+                await _tasksService.AddTaskAsync(newTask);
                 return NoContent();
             }
             catch (ArgumentException ex)
@@ -52,7 +66,7 @@ namespace MyTrello.Controllers
         {
             try
             {
-                await _taskService.EditTask(editedTask);
+                await _tasksService.EditTaskAsync(editedTask);
                 return NoContent();
             }
             catch (ArgumentException ex)
@@ -66,11 +80,11 @@ namespace MyTrello.Controllers
         }
 
         [HttpDelete("{taskId}")]
-        public async Task<IActionResult> DeleteTask([FromRoute]Guid taskId)
+        public async Task<IActionResult> DeleteTask([FromRoute] Guid taskId)
         {
             try
             {
-                await _taskService.DeleteTask(taskId);
+                await _tasksService.DeleteTaskAsync(taskId);
                 return NoContent();
             }
             catch (ArgumentException ex)

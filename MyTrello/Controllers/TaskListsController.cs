@@ -8,20 +8,34 @@ namespace MyTrello.Controllers
     [Route("api/[controller]")]
     public class TaskListsController : ControllerBase
     {
-        private readonly ITaskListService _taskListService;
+        private readonly ITaskListsService _taskListsService;
 
-        public TaskListsController(ITaskListService taskListService)
+        public TaskListsController(ITaskListsService taskListsService)
         {
-            _taskListService = taskListService;
+            _taskListsService = taskListsService;
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetTaskLists([FromQuery]string boardName)
+        public async Task<IActionResult> GetTaskLists([FromQuery] Guid? boardId = null)
         {
             try
             {
-                var allTaskLists = await _taskListService.GetTaskListsForBoard(boardName);
-                return Ok(allTaskLists);
+                var taskLists = await _taskListsService.GetTaskListsAsync(boardId);
+                return Ok(taskLists);
+            }
+            catch
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable);
+            }
+        }
+
+        [HttpGet("{taskListId}")]
+        public async Task<IActionResult> GetTaskList([FromRoute] Guid taskListId)
+        {
+            try
+            {
+                var taskList = await _taskListsService.GetTaskListAsync(taskListId);
+                return Ok(taskList);
             }
             catch
             {
@@ -30,11 +44,11 @@ namespace MyTrello.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddTaskList([FromQuery]string boardName, [FromBody]TaskListDto newTaskList)
+        public async Task<IActionResult> AddTaskList([FromBody] TaskListDto newTaskList)
         {
             try
             {
-                await _taskListService.AddTaskList(boardName, newTaskList);
+                await _taskListsService.AddTaskListAsync(newTaskList);
                 return NoContent();
             }
             catch (ArgumentException ex)
@@ -52,7 +66,7 @@ namespace MyTrello.Controllers
         {
             try
             {
-                await _taskListService.EditTaskList(editedTaskList);
+                await _taskListsService.EditTaskListAsync(editedTaskList);
                 return NoContent();
             }
             catch (ArgumentException ex)
@@ -70,7 +84,7 @@ namespace MyTrello.Controllers
         {
             try
             {
-                await _taskListService.DeleteTaskList(taskListId);
+                await _taskListsService.DeleteTaskListAsync(taskListId);
                 return NoContent();
             }
             catch (ArgumentException ex)

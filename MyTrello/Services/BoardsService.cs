@@ -7,18 +7,18 @@ using Task = System.Threading.Tasks.Task;
 
 namespace MyTrello.Services;
 
-public class BoardService : IBoardService
+public class BoardsService : IBoardsService
 {
     private readonly ApplicationDbContext _context;
-    private readonly ILogger<BoardService> _logger;
+    private readonly ILogger<BoardsService> _logger;
 
-    public BoardService(ApplicationDbContext context, ILogger<BoardService> logger)
+    public BoardsService(ApplicationDbContext context, ILogger<BoardsService> logger)
     {
         _context = context;
         _logger = logger;
     }
 
-    public async Task AddBoard(BoardDto newBoard)
+    public async Task AddBoardAsync(BoardDto newBoard)
     {
         try
         {
@@ -39,7 +39,7 @@ public class BoardService : IBoardService
         }
     }
 
-    public async Task DeleteBoard(Guid boardId)
+    public async Task DeleteBoardAsync(Guid boardId)
     {
         try
         {
@@ -56,7 +56,7 @@ public class BoardService : IBoardService
         }
     }
 
-    public async Task EditBoard(BoardDto editedBoard)
+    public async Task EditBoardAsync(BoardDto editedBoard)
     {
         try
         {
@@ -73,7 +73,7 @@ public class BoardService : IBoardService
         }
     }
 
-    public async Task<IEnumerable<BoardDto>> GetAllBoards()
+    public async Task<IEnumerable<BoardDto>> GetAllBoardsAsync()
     {
         try
         {
@@ -88,6 +88,26 @@ public class BoardService : IBoardService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Get all boards failed");
+            throw;
+        }
+    }
+
+    public async Task<BoardDto> GetBoardAsync(Guid boardId)
+    {
+        try
+        {
+            return await _context.Boards
+                .Where(b => b.BoardId == boardId)
+                .Select(b => new BoardDto
+                {
+                    BoardId = b.BoardId,
+                    Name = b.Name,
+                })
+                .FirstAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Get board failed");
             throw;
         }
     }

@@ -7,23 +7,23 @@ using Task = System.Threading.Tasks.Task;
 
 namespace MyTrello.Services;
 
-public class TaskListService : ITaskListService
+public class TaskListsService : ITaskListsService
 {
     private readonly ApplicationDbContext _context;
-    private readonly ILogger<TaskListService> _logger;
+    private readonly ILogger<TaskListsService> _logger;
 
-    public TaskListService(ApplicationDbContext context, ILogger<TaskListService> logger)
+    public TaskListsService(ApplicationDbContext context, ILogger<TaskListsService> logger)
     {
         _context = context;
         _logger = logger;
     }
 
-    public async Task AddTaskList(string boardName, TaskListDto newTaskList)
+    public async Task AddTaskListAsync(TaskListDto newTaskList)
     {
         try
         {
-            var board = await _context.Boards.Where(b => b.Name == boardName).FirstOrDefaultAsync()
-                ?? throw new ArgumentException($"Board {boardName} not found");
+            var board = await _context.Boards.Where(b => b.BoardId == newTaskList.BoardId).FirstOrDefaultAsync()
+                ?? throw new ArgumentException($"Board {newTaskList.BoardId} not found");
             await _context.TaskLists.AddAsync(new TaskList
             {
                 Board = board,
@@ -42,7 +42,7 @@ public class TaskListService : ITaskListService
         }
     }
 
-    public async Task DeleteTaskList(Guid taskListId)
+    public async Task DeleteTaskListAsync(Guid taskListId)
     {
         try
         {
@@ -59,7 +59,7 @@ public class TaskListService : ITaskListService
         }
     }
 
-    public async Task EditTaskList(TaskListDto editedTaskList)
+    public async Task EditTaskListAsync(TaskListDto editedTaskList)
     {
         try
         {
@@ -76,30 +76,44 @@ public class TaskListService : ITaskListService
         }
     }
 
-    public async Task<IEnumerable<TaskListDto>> GetTaskListsForBoard(string boardName)
+    public async Task<TaskListDto> GetTaskListAsync(Guid taskListId)
     {
         try
         {
             return await _context.TaskLists
-                .Include(tl => tl.Tasks)
-                .Include(tl => tl.Board)
-                .Where(tl => tl.Board.Name == boardName)
+                .Where(tl => tl.TaskListId == taskListId)
                 .Select(tl => new TaskListDto
                 {
                     TaskListId = tl.TaskListId,
+                    BoardId = tl.BoardId,
                     Name = tl.Name,
-                    Tasks = tl.Tasks.Select(t => new TaskDto
-                    {
-                        TaskId = t.TaskId,
-                        Info = t.Info,
-                        Description = t.Description,
-                    })
+                })
+                .FirstAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Get taskList {taskListId} failed", taskListId);
+            throw;
+        }
+    }
+
+    public async Task<IEnumerable<TaskListDto>> GetTaskListsAsync(Guid? boardId)
+    {
+        try
+        {
+            return await _context.TaskLists
+                .Where(tl => boardId == null || tl.BoardId == boardId)
+                .Select(tl => new TaskListDto
+                {
+                    TaskListId = tl.TaskListId,
+                    BoardId = tl.BoardId,
+                    Name = tl.Name,
                 })
                 .ToListAsync();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Get taskLists for board {boardName} failed", boardName);
+            _logger.LogError(ex, "Get taskLists for board {boardId} failed", boardId);
             throw;
         }
     }

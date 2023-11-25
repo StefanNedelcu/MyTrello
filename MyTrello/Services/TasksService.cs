@@ -7,23 +7,23 @@ using TaskEntity = MyTrello.Data.Entities.Task;
 
 namespace MyTrello.Services;
 
-public class TaskService : ITaskService
+public class TasksService : ITasksService
 {
     private readonly ApplicationDbContext _context;
-    private readonly ILogger<TaskService> _logger;
+    private readonly ILogger<TasksService> _logger;
 
-    public TaskService(ApplicationDbContext context, ILogger<TaskService> logger)
+    public TasksService(ApplicationDbContext context, ILogger<TasksService> logger)
     {
         _context = context;
         _logger = logger;
     }
 
-    public async Task AddTask(Guid taskListId, TaskDto newTask)
+    public async Task AddTaskAsync(TaskDto newTask)
     {
         try
         {
-            var taskList = await _context.TaskLists.FirstOrDefaultAsync(tl => tl.TaskListId == taskListId)
-                ?? throw new ArgumentException($"TaskList {taskListId} not found");
+            var taskList = await _context.TaskLists.FirstOrDefaultAsync(tl => tl.TaskListId == newTask.TaskListId)
+                ?? throw new ArgumentException($"TaskList {newTask.TaskListId} not found");
             await _context.Tasks.AddAsync(new TaskEntity
             {
                 TaskList = taskList,
@@ -43,7 +43,7 @@ public class TaskService : ITaskService
         }
     }
 
-    public async Task DeleteTask(Guid taskId)
+    public async Task DeleteTaskAsync(Guid taskId)
     {
         try
         {
@@ -60,7 +60,7 @@ public class TaskService : ITaskService
         }
     }
 
-    public async Task EditTask(TaskDto editedTask)
+    public async Task EditTaskAsync(TaskDto editedTask)
     {
         try
         {
@@ -78,16 +78,16 @@ public class TaskService : ITaskService
         }
     }
 
-    public async Task<IEnumerable<TaskDto>> GetTasksFromList(Guid taskListId)
+    public async Task<IEnumerable<TaskDto>> GetTasksAsync(Guid? taskListId)
     {
         try
         {
             return await _context.Tasks
-                .Include(t => t.TaskList)
-                .Where(t => t.TaskList.TaskListId == taskListId)
+                .Where(t => taskListId == null || t.TaskListId == taskListId)
                 .Select(t => new TaskDto
                 {
                     TaskId = t.TaskId,
+                    TaskListId = t.TaskListId,
                     Info = t.Info,
                     Description = t.Description,
                 })
@@ -96,6 +96,28 @@ public class TaskService : ITaskService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Get all tasks failed");
+            throw;
+        }
+    }
+
+    public async Task<TaskDto> GetTaskAsync(Guid taskId)
+    {
+        try
+        {
+            return await _context.Tasks
+                .Where(t => t.TaskId == taskId)
+                .Select(t => new TaskDto
+                {
+                    TaskId = t.TaskId,
+                    TaskListId = t.TaskListId,
+                    Info = t.Info,
+                    Description = t.Description,
+                })
+                .FirstAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Get task failed");
             throw;
         }
     }

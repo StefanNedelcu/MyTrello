@@ -19,9 +19,9 @@ builder.Services.AddCors(p => p.AddPolicy("corsapp", builder =>
     builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
 }));
 
-builder.Services.AddTransient<IBoardService, BoardService>();
-builder.Services.AddTransient<ITaskListService, TaskListService>();
-builder.Services.AddTransient<ITaskService, TaskService>();
+builder.Services.AddTransient<IBoardsService, BoardsService>();
+builder.Services.AddTransient<ITaskListsService, TaskListsService>();
+builder.Services.AddTransient<ITasksService, TasksService>();
 
 var app = builder.Build();
 
